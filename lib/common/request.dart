@@ -39,6 +39,7 @@ class Request {
 
   late final Dio _dio;
   late final Dio _clashDio;
+  late final Dio _insecureClashDio;
   String? userAgent;
 
   Request() {
@@ -55,11 +56,20 @@ class Request {
       createHttpClient: () {
         final client = HttpClient();
         client.autoUncompress = false;
-        client.badCertificateCallback = (_, _, _) => true;
         client.findProxy = (Uri uri) {
           client.userAgent = globalState.ua;
           return BettboxHttpOverrides.handleFindProxy(uri);
         };
+        return client;
+      },
+    );
+    _insecureClashDio = Dio();
+    _insecureClashDio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.autoUncompress = false;
+        client.findProxy = BettboxHttpOverrides.handleFindProxy;
+        client.badCertificateCallback = (_, _, _) => true;
         return client;
       },
     );
@@ -255,8 +265,10 @@ class Request {
 
   Future<({String path, Headers? headers, bool remote})> fetchProfileSource(
     String url,
-    String downloadPath,
-  ) async {
+    String downloadPath, {
+    bool skipCertVerify = false,
+    String? userAgent,
+  }) async {
     if (url.isFileUrl) {
       final local = await _localFileForUrl(url);
       await local.file.copy(downloadPath);
@@ -266,37 +278,20 @@ class Request {
         remote: false,
       );
     }
-    final (requestUrl, headers) = _authorizedRequest(url);
-    try {
-      final response = await _withPlainEncodingRetry(
-        headers,
-        (requestHeaders) => _clashDio.download(
-          requestUrl,
-          downloadPath,
-          options: Options(headers: requestHeaders),
-        ),
-      );
-      return (path: downloadPath, headers: response.headers, remote: true);
-    } on DioException catch (e) {
-      if (e.error is! HandshakeException) rethrow;
-      commonPrint.log('TLS verification failed, retrying through core: $e');
-      final proxy = BettboxHttpOverrides.handleFindProxy(Uri.parse(requestUrl));
-      final responseHeaders = await clashCore.downloadProfile(
-        url: requestUrl,
-        output: downloadPath,
-        headers: {
-          for (final MapEntry(:key, :value) in headers.entries)
-            key: value.toString(),
-          HttpHeaders.userAgentHeader: globalState.ua,
-        },
-        proxy: proxy.startsWith('PROXY ') ? proxy.substring(6) : null,
-      );
-      return (
-        path: downloadPath,
-        headers: Headers.fromMap(responseHeaders),
-        remote: true,
-      );
-    }
+    final (requestUrl, authHeaders) = _authorizedRequest(url);
+    final dio = skipCertVerify ? _insecureClashDio : _clashDio;
+    final response = await _withPlainEncodingRetry(
+      {
+        ...authHeaders,
+        HttpHeaders.userAgentHeader: userAgent ?? globalState.ua,
+      },
+      (requestHeaders) => dio.download(
+        requestUrl,
+        downloadPath,
+        options: Options(headers: requestHeaders),
+      ),
+    );
+    return (path: downloadPath, headers: response.headers, remote: true);
   }
 
   Future<Response<dynamic>> _getResponseForUrl(
@@ -405,7 +400,7 @@ class Request {
         }
       }
     } catch (e) {
-      commonPrint.warn('Check update failed: ${e.formatErrorLog}');
+      commonPrint.warn('Check failed: ${e.formatErrorLog}', module: 'Update');
     }
     return null;
   }

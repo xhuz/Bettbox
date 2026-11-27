@@ -236,6 +236,7 @@ class ApplicationState extends ConsumerState<Application>
   Future<void> _initApp() async {
     unawaited(uiManager.initializeUI());
     unawaited(ensureRustLib());
+    unawaited(JavaScriptRuntimeManager.preloadOptionsCache());
     unawaited(preferences.flushStartupBackup());
     final currentContext = globalState.navigatorKey.currentContext;
     if (currentContext != null && currentContext != context) {
@@ -246,7 +247,7 @@ class ApplicationState extends ConsumerState<Application>
       try {
         await ExternalControl.start();
       } catch (e) {
-        commonPrint.warn('ExternalControl start failed: $e');
+        commonPrint.warn('External control start failed: $e');
       }
     }
     globalState.appController.initLink();

@@ -88,6 +88,8 @@ abstract class Profile with _$Profile {
     @Default(false) bool managed,
     @Default(false) bool managedStyleApplied,
     String? ageSecretKey,
+    @Default(false) bool skipCertVerify,
+    String? userAgent,
     @JsonKey(name: 'group-switches')
     @Default({})
     Map<String, bool> groupSwitches,
@@ -141,6 +143,7 @@ abstract class ProfileBundle with _$ProfileBundle {
     @Default(BundleReport()) BundleReport report,
     @Default({}) Map<String, String> failures,
     @Default(false) bool collapsed,
+    String? scriptKey,
   }) = _ProfileBundle;
 
   factory ProfileBundle.fromJson(Map<String, Object?> json) =>
@@ -233,7 +236,7 @@ extension ProfileExtension on Profile {
 
   bool get realAutoUpdate => url.isEmpty == true ? false : autoUpdate;
 
-  bool get isManaged => bundle != null || managed;
+  bool get isManaged => bundle != null ? scriptId == null : managed;
 
   bool get runsManagedScript => bundle == null && managed;
 
@@ -339,7 +342,12 @@ extension ProfileExtension on Profile {
     );
     try {
       await File(downloadPath).parent.create(recursive: true);
-      final source = await request.fetchProfileSource(url, downloadPath);
+      final source = await request.fetchProfileSource(
+        url,
+        downloadPath,
+        skipCertVerify: skipCertVerify,
+        userAgent: userAgent,
+      );
       final headers = source.headers;
       final disposition = headers?['content-disposition']?.firstOrNull;
       final userinfo = headers?['subscription-userinfo']?.firstOrNull;

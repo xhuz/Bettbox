@@ -168,6 +168,31 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
+      - name: Setup Maven Mirror (Android)
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/maven-mirror.gradle <<'EOF'
+          def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+          def redirect = { RepositoryHandler repositories ->
+              repositories.withType(MavenArtifactRepository).configureEach { repo ->
+                  def host = repo.url?.host
+                  if (host == 'repo.maven.apache.org' || host == 'repo1.maven.org') {
+                      repo.url = mirror
+                  }
+              }
+          }
+          beforeSettings { settings ->
+              redirect(settings.pluginManagement.repositories)
+              redirect(settings.dependencyResolutionManagement.repositories)
+          }
+          beforeProject { project ->
+              redirect(project.buildscript.repositories)
+              redirect(project.repositories)
+          }
+          EOF
+
       - name: Setup Android NDK
         if: matrix.platform == 'android'
         shell: bash
@@ -175,22 +200,6 @@ jobs:
           NDK_VERSION="28.2.13676358"
           yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" >/dev/null 2>&1 || true
           echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
-
-      - name: Configure Cargo for Android
-        if: matrix.platform == 'android'
-        shell: bash
-        run: |
-          mkdir -p ~/.cargo
-          cat > ~/.cargo/config.toml <<EOF
-          [target.aarch64-linux-android]
-          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"
-          [target.armv7-linux-androideabi]
-          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi26-clang"
-          [target.x86_64-linux-android]
-          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android26-clang"
-          [target.i686-linux-android]
-          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android26-clang"
-          EOF
 
       - name: Install Dependencies (Linux)
         if: matrix.platform == 'linux'
@@ -213,12 +222,38 @@ jobs:
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
 
       - name: Setup Flutter
+        if: ${{ !contains(matrix.os, 'arm') }}
         uses: subosito/flutter-action@v2
         with:
-          channel: ${{ contains(matrix.os, 'arm') && 'master' || 'stable' }}
+          channel: 'stable'
           cache: true
           cache-key: flutter-${{ matrix.platform }}-${{ matrix.arch }}-${{ hashFiles('**/pubspec.lock') }}
-          flutter-version: ${{ contains(matrix.os, 'arm') && '' || '3.50.1' }}
+          flutter-version: '3.47.9'
+
+      - name: Setup Flutter (ARM)
+        if: ${{ contains(matrix.os, 'arm') }}
+        shell: bash
+        run: |
+          FLUTTER_DIR="${RUNNER_TEMP}/flutter"
+          git clone --depth 1 --branch 3.47.9 https://github.com/flutter/flutter.git "${FLUTTER_DIR}"
+          PUB_CACHE_DIR="${HOME}/.pub-cache"
+          mkdir -p "${PUB_CACHE_DIR}/bin"
+          if command -v cygpath >/dev/null 2>&1; then
+            FLUTTER_ROOT_VAL="$(cygpath -w "${FLUTTER_DIR}")"
+            PUB_CACHE_VAL="$(cygpath -w "${PUB_CACHE_DIR}")"
+            echo "$(cygpath -w "${FLUTTER_DIR}/bin")" >> "${GITHUB_PATH}"
+            echo "$(cygpath -w "${FLUTTER_DIR}/bin/cache/dart-sdk/bin")" >> "${GITHUB_PATH}"
+            echo "$(cygpath -w "${PUB_CACHE_DIR}/bin")" >> "${GITHUB_PATH}"
+          else
+            FLUTTER_ROOT_VAL="${FLUTTER_DIR}"
+            PUB_CACHE_VAL="${PUB_CACHE_DIR}"
+            echo "${FLUTTER_DIR}/bin" >> "${GITHUB_PATH}"
+            echo "${FLUTTER_DIR}/bin/cache/dart-sdk/bin" >> "${GITHUB_PATH}"
+            echo "${PUB_CACHE_DIR}/bin" >> "${GITHUB_PATH}"
+          fi
+          echo "FLUTTER_ROOT=${FLUTTER_ROOT_VAL}" >> "${GITHUB_ENV}"
+          echo "PUB_CACHE=${PUB_CACHE_VAL}" >> "${GITHUB_ENV}"
+          "${FLUTTER_DIR}/bin/flutter" --version
 
       - name: Clear Pub Cache Credentials
         shell: bash
@@ -518,7 +553,7 @@ jobs:
           overwrite: true
 
       - name: Upload Windows Portable Artifact
-        if: matrix.platform == 'windows' && matrix.compatible == true && matrix.arch == 'amd64' && matrix.standard != true
+        if: matrix.platform == 'windows' && matrix.arch == 'amd64' && matrix.standard != true
         uses: actions/upload-artifact@v7
         with:
           name: Bettbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}-portable

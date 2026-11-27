@@ -172,10 +172,14 @@ UpdateParams updateParams(Ref ref) {
   return ref.watch(
     patchClashConfigProvider.select(
       (state) => UpdateParams(
-        tun: state.tun.getRealTun(
-          bypassPrivateRoute,
-          bypassPrivateRouteAddress: realBypassPrivateRouteAddress,
-        ),
+        tun: state.tun
+            .getRealTun(
+              bypassPrivateRoute,
+              bypassPrivateRouteAddress: realBypassPrivateRouteAddress,
+            )
+            .copyWith(
+              stack: AppIdentity.isStandard ? state.tun.stack : TunStack.mips,
+            ),
         allowLan: state.allowLan,
         findProcessMode: state.findProcessMode,
         mode: state.mode,
@@ -1091,7 +1095,12 @@ needSetup(Ref ref) {
       (profile) => profile?.runsManagedScript ?? false,
     ),
   );
-  final script = ref.watch(currentProfileScriptProvider);
+  final bakedScript = ref.watch(
+    currentProfileProvider.select(
+      (profile) => profile?.bundle?.scriptKey != null,
+    ),
+  );
+  final script = bakedScript ? null : ref.watch(currentProfileScriptProvider);
   final scriptDigest = runsManagedScript
       ? ref.watch(
           managedSettingProvider.select(

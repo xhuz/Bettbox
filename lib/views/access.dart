@@ -771,14 +771,15 @@ class PackageIcon extends ConsumerWidget {
         builder: (context, snapshot) {
           final path = snapshot.data;
           if (path == null || path.isEmpty) return _buildDefaultIcon(context);
+          final cacheSize = (48 * MediaQuery.devicePixelRatioOf(context))
+              .ceil();
           return Image.file(
             File(path),
             gaplessPlayback: true,
             width: 48,
             height: 48,
-            cacheWidth: 48,
-            cacheHeight: 48,
-            useLogicalCacheSize: true,
+            cacheWidth: cacheSize,
+            cacheHeight: cacheSize,
             errorBuilder: (_, _, _) {
               if (_packageIconPathCache[packageName] == path) {
                 _packageIconPathCache.remove(packageName);
@@ -931,21 +932,26 @@ class _PackagePickerPanelState extends ConsumerState<PackagePickerPanel> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: TextField(
-              controller: _queryController,
-              onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: appLocalizations.search,
-                prefixIcon: Icon(context.resolveIcon(Icons.search)),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: Icon(context.resolveIcon(Icons.clear)),
-                        onPressed: () {
-                          _queryController.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
+            child: TvTextField(
+              builder: (tv) => TextField(
+                focusNode: tv.focusNode,
+                readOnly: tv.readOnly,
+                showCursor: tv.showCursor,
+                controller: _queryController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: appLocalizations.search,
+                  prefixIcon: Icon(context.resolveIcon(Icons.search)),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: Icon(context.resolveIcon(Icons.clear)),
+                          onPressed: () {
+                            _queryController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                ),
               ),
             ),
           ),

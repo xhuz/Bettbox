@@ -6,6 +6,8 @@ import 'package:bett_box/models/models.dart';
 import 'package:bett_box/providers/providers.dart';
 import 'package:bett_box/state.dart';
 import 'package:bett_box/views/profiles/managed_options.dart';
+import 'package:bett_box/views/profiles/scripts.dart'
+    show processScriptOptions, showScriptCustomOptions;
 import 'package:bett_box/widgets/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +34,7 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
   late ProfileUsageStyle _usageStyle =
       widget.profile?.usageStyle ?? ProfileUsageStyle.ring;
   Map<String, bool>? _defaults;
+  late String? _scriptId = widget.profile?.scriptId;
 
   String? get _id => widget.profile?.id;
 
@@ -45,9 +48,21 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
         if (profiles.getProfile(member.id) != null) member,
     ];
     _labelController.text = widget.profile?.label ?? _defaultLabel(profiles);
+    final cachedScript = ManagedScript.cachedOptionsScript(
+      ref.read(managedSettingProvider),
+    );
+    final cachedOptions = cachedScript == null
+        ? null
+        : JavaScriptRuntimeManager.getCachedOptions(cachedScript);
+    if (cachedOptions != null) {
+      _defaults = _parseDefaults(cachedOptions['options']);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.afterRouteTransition(_loadOptions);
+      context.afterRouteTransition(() {
+        if (_defaults == null) _loadOptions();
+        _loadScriptOptions();
+      });
     });
   }
 
@@ -57,24 +72,37 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
     super.dispose();
   }
 
+  Map<String, bool> _parseDefaults(Object? options) => {
+    if (options is Map)
+      for (final MapEntry(:key, :value) in options.entries)
+        key.toString(): value is bool ? value : true,
+  };
+
   Future<void> _loadOptions() async {
     if (!mounted) return;
     final props = ref.read(managedSettingProvider);
     final data = await globalState.appController.safeRun(() async {
-      final script = await ManagedScript.script(
-        props.copyWith(routes: const [], order: const []),
-      );
+      final script = await ManagedScript.optionsScript(props);
       return JavaScriptRuntimeManager.extractScriptOptions(script);
     });
-    final options = data?['options'];
     if (!mounted) return;
     setState(() {
-      _defaults = {
-        if (options is Map)
-          for (final MapEntry(:key, :value) in options.entries)
-            key.toString(): value is bool ? value : true,
-      };
+      _defaults = _parseDefaults(data?['options']);
     });
+  }
+
+  Future<void> _loadScriptOptions() async {
+    final script = ref.read(scriptStateProvider).findScript(_scriptId);
+    if (script == null ||
+        !script.compatible ||
+        JavaScriptRuntimeManager.hasCachedOptions(script)) {
+      return;
+    }
+    await globalState.appController.safeRun(
+      () => JavaScriptRuntimeManager.extractScriptOptions(script),
+    );
+    if (!mounted) return;
+    setState(() {});
   }
 
   String _labelOf(List<Profile> profiles, String id) =>
@@ -290,6 +318,7 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
         ? text
         : widget.profile?.label ?? _defaultLabel(profiles);
     final members = List<BundleMember>.of(_members);
+    final scriptId = ref.read(scriptStateProvider).findScript(_scriptId)?.id;
     final id = _id;
     if (id == null) {
       final created = await appController.safeRun<bool>(
@@ -299,6 +328,7 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
             members: members,
             collapsed: _collapsed,
             usageStyle: _usageStyle,
+            scriptId: scriptId,
           );
           return true;
         },
@@ -324,10 +354,11 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
       ),
     );
     Navigator.of(context).pop();
-    if (!changed) return;
+    if (!changed && scriptId == latest.scriptId) return;
     unawaited(
       appController.safeRun(
-        () => appController.generateBundle(id),
+        () =>
+            appController.updateBundleScript(id, scriptId, regenerate: changed),
         silence: false,
       ),
     );
@@ -540,6 +571,19 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
 
   Widget _buildManaged(BuildContext context) {
     final props = ref.watch(managedSettingProvider);
+    final scriptProps = ref.watch(scriptStateProvider);
+    final script = scriptProps.findScript(_scriptId);
+    final value = script?.id ?? managedScriptId;
+    final custom = script != null && script.compatible ? script : null;
+    final customData = custom == null
+        ? null
+        : JavaScriptRuntimeManager.getCachedOptions(custom);
+    final customOptions = custom == null || customData == null
+        ? null
+        : processScriptOptions(customData, custom).options;
+    String labelOf(String id) => id == managedScriptId
+        ? appLocalizations.builtInManagedMode
+        : scriptProps.findScript(id)?.label ?? id;
     final defaults = _defaults;
     final enabled = defaults?.entries
         .where((entry) => props.options[entry.key] ?? entry.value)
@@ -547,21 +591,59 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(appLocalizations.managedMode),
+        _header(appLocalizations.script),
         _card(context, [
-          ListItem(
-            title: Text(appLocalizations.managedOptions),
-            subtitle: defaults == null || defaults.isEmpty || enabled == null
-                ? null
-                : Text(
-                    appLocalizations.managedOptionsDesc(
-                      enabled,
-                      defaults.length,
-                    ),
-                  ),
-            trailing: const AppIcon(Icons.chevron_right),
-            onTap: () => showManagedOptions(context),
+          ListItem<String>.options(
+            title: Text(labelOf(value)),
+            subtitle: value == managedScriptId
+                ? Text(appLocalizations.managedModeDesc)
+                : null,
+            trailing: const AppIcon(Icons.expand_more),
+            delegate: OptionsDelegate(
+              title: appLocalizations.script,
+              options: [
+                managedScriptId,
+                for (final script in scriptProps.scripts) script.id,
+              ],
+              value: value,
+              textBuilder: labelOf,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(
+                  () => _scriptId = value == managedScriptId ? null : value,
+                );
+                _loadScriptOptions();
+              },
+            ),
           ),
+          if (value == managedScriptId)
+            ListItem(
+              title: Text(appLocalizations.managedOptions),
+              subtitle: defaults == null || defaults.isEmpty || enabled == null
+                  ? null
+                  : Text(
+                      appLocalizations.managedOptionsDesc(
+                        enabled,
+                        defaults.length,
+                      ),
+                    ),
+              trailing: const AppIcon(Icons.chevron_right),
+              onTap: () => showManagedOptions(context),
+            ),
+          if (custom != null)
+            ListItem(
+              title: Text(appLocalizations.managedOptions),
+              subtitle: customOptions == null || customOptions.isEmpty
+                  ? null
+                  : Text(
+                      appLocalizations.managedOptionsDesc(
+                        customOptions.values.where((value) => value).length,
+                        customOptions.length,
+                      ),
+                    ),
+              trailing: const AppIcon(Icons.chevron_right),
+              onTap: () => showScriptCustomOptions(context, script: custom),
+            ),
         ]),
       ],
     );
@@ -584,10 +666,15 @@ class _MergeProfileViewState extends ConsumerState<MergeProfileView> {
     final items = [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: TextFormField(
-          controller: _labelController,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(labelText: appLocalizations.name),
+        child: TvTextField(
+          builder: (tv) => TextFormField(
+            focusNode: tv.focusNode,
+            readOnly: tv.readOnly,
+            showCursor: tv.showCursor,
+            controller: _labelController,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: appLocalizations.name),
+          ),
         ),
       ),
       if (current != null) _buildReport(context, current),

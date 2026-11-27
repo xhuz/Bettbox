@@ -1050,21 +1050,46 @@ class AppLocalizations {
     );
   }
 
-  /// `Upgrade Notice`
-  String get updateTip {
+  /// `Install`
+  String get install {
+    return Intl.message('Install', name: 'install', desc: '', args: []);
+  }
+
+  /// `Update download started`
+  String get updateDownloadStarted {
     return Intl.message(
-      'Upgrade Notice',
-      name: 'updateTip',
+      'Update download started',
+      name: 'updateDownloadStarted',
       desc: '',
       args: [],
     );
   }
 
-  /// `The new version package is ready. To keep the service safe, the running VPN service will be stopped before upgrading. Confirm to start the installation.`
-  String get updateReadyVpnTip {
+  /// `Update is downloading`
+  String get updateDownloading {
     return Intl.message(
-      'The new version package is ready. To keep the service safe, the running VPN service will be stopped before upgrading. Confirm to start the installation.',
-      name: 'updateReadyVpnTip',
+      'Update is downloading',
+      name: 'updateDownloading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Update downloaded`
+  String get updateDownloaded {
+    return Intl.message(
+      'Update downloaded',
+      name: 'updateDownloaded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Upgrade Notice`
+  String get updateTip {
+    return Intl.message(
+      'Upgrade Notice',
+      name: 'updateTip',
       desc: '',
       args: [],
     );
@@ -2030,6 +2055,46 @@ class AppLocalizations {
     return Intl.message(
       'Restore All Data',
       name: 'recoveryAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back Up Profiles Only`
+  String get backupProfiles {
+    return Intl.message(
+      'Back Up Profiles Only',
+      name: 'backupProfiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back Up All Data`
+  String get backupAll {
+    return Intl.message(
+      'Back Up All Data',
+      name: 'backupAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Subscriptions, override scripts, nodes and managed mode`
+  String get backupScopeProfilesDesc {
+    return Intl.message(
+      'Subscriptions, override scripts, nodes and managed mode',
+      name: 'backupScopeProfilesDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profiles and all app settings`
+  String get backupScopeAllDesc {
+    return Intl.message(
+      'Profiles and all app settings',
+      name: 'backupScopeAllDesc',
       desc: '',
       args: [],
     );
@@ -4705,10 +4770,10 @@ class AppLocalizations {
     );
   }
 
-  /// `Hide IP Display`
+  /// `Protect IP Display`
   String get ipPrivacyProtection {
     return Intl.message(
-      'Hide IP Display',
+      'Protect IP Display',
       name: 'ipPrivacyProtection',
       desc: '',
       args: [],
@@ -4813,11 +4878,6 @@ class AppLocalizations {
   /// `Add Rule`
   String get addRule {
     return Intl.message('Add Rule', name: 'addRule', desc: '', args: []);
-  }
-
-  /// `Rule Name`
-  String get ruleName {
-    return Intl.message('Rule Name', name: 'ruleName', desc: '', args: []);
   }
 
   /// `Content`
@@ -5740,11 +5800,31 @@ class AppLocalizations {
     );
   }
 
-  /// `Age Key Generation`
+  /// `Age Key Tool`
   String get ageKeyGenerateTitle {
     return Intl.message(
-      'Age Key Generation',
+      'Age Key Tool',
       name: 'ageKeyGenerateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Skip certificate verification`
+  String get skipCertVerify {
+    return Intl.message(
+      'Skip certificate verification',
+      name: 'skipCertVerify',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use specified UA`
+  String get useCustomUa {
+    return Intl.message(
+      'Use specified UA',
+      name: 'useCustomUa',
       desc: '',
       args: [],
     );
@@ -10489,10 +10569,10 @@ class AppLocalizations {
     );
   }
 
-  /// `Matched from top to bottom, drag to reorder`
+  /// `Drag to reorder groups; takes effect after you confirm and save`
   String get groupOrderTip {
     return Intl.message(
-      'Matched from top to bottom, drag to reorder',
+      'Drag to reorder groups; takes effect after you confirm and save',
       name: 'groupOrderTip',
       desc: '',
       args: [],
@@ -10554,9 +10634,9 @@ class AppLocalizations {
     );
   }
 
-  /// `Rule Order`
+  /// `Group Order`
   String get ruleSort {
-    return Intl.message('Rule Order', name: 'ruleSort', desc: '', args: []);
+    return Intl.message('Group Order', name: 'ruleSort', desc: '', args: []);
   }
 
   /// `{count} rules, included in the {group} group`
@@ -10929,13 +11009,13 @@ class AppLocalizations {
     );
   }
 
-  /// `Only one node can be added at a time`
-  String get nodeImportSingle {
+  /// `Skipped {count} invalid nodes`
+  String nodeImportSkipped(Object count) {
     return Intl.message(
-      'Only one node can be added at a time',
-      name: 'nodeImportSingle',
+      'Skipped $count invalid nodes',
+      name: 'nodeImportSkipped',
       desc: '',
-      args: [],
+      args: [count],
     );
   }
 
@@ -11219,6 +11299,157 @@ class AppLocalizations {
     return Intl.message(
       'File no longer exists',
       name: 'fileNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `IP`
+  String get ip {
+    return Intl.message('IP', name: 'ip', desc: '', args: []);
+  }
+
+  /// `{type, select, DOMAIN_SUFFIX {Domain suffix} DOMAIN {Full domain} DOMAIN_KEYWORD {Domain keyword} DOMAIN_WILDCARD {Domain wildcard} DOMAIN_REGEX {Domain regex} GEOSITE {GeoSite} IP_CIDR {IP range} IP_SUFFIX {IP suffix} IP_ASN {IP ASN} GEOIP {GeoIP} SRC_IP_CIDR {Source IP range} SRC_IP_SUFFIX {Source IP suffix} SRC_IP_ASN {Source IP ASN} SRC_GEOIP {Source GeoIP} PROCESS_NAME {Process name} PROCESS_NAME_WILDCARD {Process name wildcard} PROCESS_NAME_REGEX {Process name regex} PROCESS_PATH {Process path} PROCESS_PATH_WILDCARD {Process path wildcard} PROCESS_PATH_REGEX {Process path regex} UID {User ID} DST_PORT {Destination port} SRC_PORT {Source port} NETWORK {Network type} IN_PORT {Inbound port} IN_TYPE {Inbound type} IN_NAME {Inbound name} IN_USER {Inbound user} DSCP {DSCP} RULE_SET {Rule set} AND {Logical AND} OR {Logical OR} NOT {Logical NOT} SUB_RULE {Sub rule} MATCH {Match all} other {{type}}}`
+  String ruleTypeName(Object type) {
+    return Intl.select(
+      type,
+      {
+        'DOMAIN_SUFFIX': 'Domain suffix',
+        'DOMAIN': 'Full domain',
+        'DOMAIN_KEYWORD': 'Domain keyword',
+        'DOMAIN_WILDCARD': 'Domain wildcard',
+        'DOMAIN_REGEX': 'Domain regex',
+        'GEOSITE': 'GeoSite',
+        'IP_CIDR': 'IP range',
+        'IP_SUFFIX': 'IP suffix',
+        'IP_ASN': 'IP ASN',
+        'GEOIP': 'GeoIP',
+        'SRC_IP_CIDR': 'Source IP range',
+        'SRC_IP_SUFFIX': 'Source IP suffix',
+        'SRC_IP_ASN': 'Source IP ASN',
+        'SRC_GEOIP': 'Source GeoIP',
+        'PROCESS_NAME': 'Process name',
+        'PROCESS_NAME_WILDCARD': 'Process name wildcard',
+        'PROCESS_NAME_REGEX': 'Process name regex',
+        'PROCESS_PATH': 'Process path',
+        'PROCESS_PATH_WILDCARD': 'Process path wildcard',
+        'PROCESS_PATH_REGEX': 'Process path regex',
+        'UID': 'User ID',
+        'DST_PORT': 'Destination port',
+        'SRC_PORT': 'Source port',
+        'NETWORK': 'Network type',
+        'IN_PORT': 'Inbound port',
+        'IN_TYPE': 'Inbound type',
+        'IN_NAME': 'Inbound name',
+        'IN_USER': 'Inbound user',
+        'DSCP': 'DSCP',
+        'RULE_SET': 'Rule set',
+        'AND': 'Logical AND',
+        'OR': 'Logical OR',
+        'NOT': 'Logical NOT',
+        'SUB_RULE': 'Sub rule',
+        'MATCH': 'Match all',
+        'other': '$type',
+      },
+      name: 'ruleTypeName',
+      desc: '',
+      args: [type],
+    );
+  }
+
+  /// `{type, select, DOMAIN_SUFFIX {Matches the domain and all its subdomains, e.g. google.com also matches www.google.com} DOMAIN {Matches only this exact domain, e.g. google.com does not match www.google.com} DOMAIN_KEYWORD {Matches any domain that contains the keyword, e.g. google} DOMAIN_WILDCARD {Matches domains by wildcard: * for any characters, ? for one character, e.g. *.google.com} DOMAIN_REGEX {Matches domains with a regular expression} GEOSITE {Matches domains in a GeoSite category, e.g. google or cn} IP_CIDR {Matches destination IPs in a range, e.g. 192.168.1.0/24; a single IP uses /32, or /128 for IPv6} IP_SUFFIX {Matches IPs whose last bits are the same, e.g. 8.8.8.8/24 compares the last 24 bits} IP_ASN {Matches the autonomous system number of the destination IP, e.g. 13335} GEOIP {Matches the country or region code of the destination IP, e.g. CN} SRC_IP_CIDR {Matches the source IP of the connection by range, e.g. 192.168.1.0/24} SRC_IP_SUFFIX {Matches source IPs whose last bits are the same} SRC_IP_ASN {Matches the autonomous system number of the source IP} SRC_GEOIP {Matches the country or region code of the source IP} PROCESS_NAME {Matches the process name; on Android this is the app package name} PROCESS_NAME_WILDCARD {Matches process names by wildcard: * for any characters, ? for one character} PROCESS_NAME_REGEX {Matches process names with a regular expression} PROCESS_PATH {Matches the full path of the process executable} PROCESS_PATH_WILDCARD {Matches process paths by wildcard: * for any characters, ? for one character} PROCESS_PATH_REGEX {Matches process paths with a regular expression} UID {Matches the Linux user ID of the process; ranges allowed, e.g. 1000-1999} DST_PORT {Matches the destination port; separate with / and use - for ranges, e.g. 80/443/8000-9000} SRC_PORT {Matches the source port; separate with / and use - for ranges} NETWORK {Matches the transport protocol: tcp or udp} IN_PORT {Matches the local inbound listening port} IN_TYPE {Matches the inbound type, e.g. HTTP, SOCKS5 or TUN; separate multiple with /} IN_NAME {Matches the inbound listener name; separate multiple with /} IN_USER {Matches the username used to sign in to the inbound; separate multiple with /} DSCP {Matches the DSCP mark in the IP header, from 0 to 63} RULE_SET {Matches the content of a rule provider} AND {Matches when every sub-rule matches, e.g. ((DOMAIN,baidu.com),(NETWORK,UDP))} OR {Matches when any sub-rule matches, e.g. ((NETWORK,UDP),(DST-PORT,443))} NOT {Matches when the sub-rule does not match, e.g. ((DOMAIN,baidu.com))} SUB_RULE {When the condition matches, continues with the chosen sub rule set, e.g. (NETWORK,TCP)} MATCH {Matches all traffic; rules after it never take effect} other {{type}}}`
+  String ruleTypeDesc(Object type) {
+    return Intl.select(
+      type,
+      {
+        'DOMAIN_SUFFIX': 'Matches the domain and all its subdomains, e.g. google.com also matches www.google.com',
+        'DOMAIN': 'Matches only this exact domain, e.g. google.com does not match www.google.com',
+        'DOMAIN_KEYWORD':
+            'Matches any domain that contains the keyword, e.g. google',
+        'DOMAIN_WILDCARD': 'Matches domains by wildcard: * for any characters, ? for one character, e.g. *.google.com',
+        'DOMAIN_REGEX': 'Matches domains with a regular expression',
+        'GEOSITE': 'Matches domains in a GeoSite category, e.g. google or cn',
+        'IP_CIDR': 'Matches destination IPs in a range, e.g. 192.168.1.0/24; a single IP uses /32, or /128 for IPv6',
+        'IP_SUFFIX': 'Matches IPs whose last bits are the same, e.g. 8.8.8.8/24 compares the last 24 bits',
+        'IP_ASN': 'Matches the autonomous system number of the destination IP, e.g. 13335',
+        'GEOIP':
+            'Matches the country or region code of the destination IP, e.g. CN',
+        'SRC_IP_CIDR': 'Matches the source IP of the connection by range, e.g. 192.168.1.0/24',
+        'SRC_IP_SUFFIX': 'Matches source IPs whose last bits are the same',
+        'SRC_IP_ASN': 'Matches the autonomous system number of the source IP',
+        'SRC_GEOIP': 'Matches the country or region code of the source IP',
+        'PROCESS_NAME':
+            'Matches the process name; on Android this is the app package name',
+        'PROCESS_NAME_WILDCARD': 'Matches process names by wildcard: * for any characters, ? for one character',
+        'PROCESS_NAME_REGEX': 'Matches process names with a regular expression',
+        'PROCESS_PATH': 'Matches the full path of the process executable',
+        'PROCESS_PATH_WILDCARD': 'Matches process paths by wildcard: * for any characters, ? for one character',
+        'PROCESS_PATH_REGEX': 'Matches process paths with a regular expression',
+        'UID': 'Matches the Linux user ID of the process; ranges allowed, e.g. 1000-1999',
+        'DST_PORT': 'Matches the destination port; separate with / and use - for ranges, e.g. 80/443/8000-9000',
+        'SRC_PORT':
+            'Matches the source port; separate with / and use - for ranges',
+        'NETWORK': 'Matches the transport protocol: tcp or udp',
+        'IN_PORT': 'Matches the local inbound listening port',
+        'IN_TYPE': 'Matches the inbound type, e.g. HTTP, SOCKS5 or TUN; separate multiple with /',
+        'IN_NAME':
+            'Matches the inbound listener name; separate multiple with /',
+        'IN_USER': 'Matches the username used to sign in to the inbound; separate multiple with /',
+        'DSCP': 'Matches the DSCP mark in the IP header, from 0 to 63',
+        'RULE_SET': 'Matches the content of a rule provider',
+        'AND': 'Matches when every sub-rule matches, e.g. ((DOMAIN,baidu.com),(NETWORK,UDP))',
+        'OR': 'Matches when any sub-rule matches, e.g. ((NETWORK,UDP),(DST-PORT,443))',
+        'NOT': 'Matches when the sub-rule does not match, e.g. ((DOMAIN,baidu.com))',
+        'SUB_RULE': 'When the condition matches, continues with the chosen sub rule set, e.g. (NETWORK,TCP)',
+        'MATCH': 'Matches all traffic; rules after it never take effect',
+        'other': '$type',
+      },
+      name: 'ruleTypeDesc',
+      desc: '',
+      args: [type],
+    );
+  }
+
+  /// `Rule added to the current profile only`
+  String get nonManagedRuleTip {
+    return Intl.message(
+      'Rule added to the current profile only',
+      name: 'nonManagedRuleTip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rule added`
+  String get ruleAdded {
+    return Intl.message('Rule added', name: 'ruleAdded', desc: '', args: []);
+  }
+
+  /// `When on, the rule applies to all managed profiles. When off, or in non-managed mode, it only applies to the current profile`
+  String get applyToAllManagedDesc {
+    return Intl.message(
+      'When on, the rule applies to all managed profiles. When off, or in non-managed mode, it only applies to the current profile',
+      name: 'applyToAllManagedDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `LAN devices can't reach the Bettbox core until the system firewall allows it. Add a firewall rule that only allows devices on the local subnet? Administrator approval is required.`
+  String get lanFirewallTip {
+    return Intl.message(
+      'LAN devices can\'t reach the Bettbox core until the system firewall allows it. Add a firewall rule that only allows devices on the local subnet? Administrator approval is required.',
+      name: 'lanFirewallTip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `LAN proxy requires the Local network permission. Allow it for Bettbox in system settings.`
+  String get localNetworkPermissionTip {
+    return Intl.message(
+      'LAN proxy requires the Local network permission. Allow it for Bettbox in system settings.',
+      name: 'localNetworkPermissionTip',
       desc: '',
       args: [],
     );

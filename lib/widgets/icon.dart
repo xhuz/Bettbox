@@ -239,7 +239,7 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
       if (!trimmed.startsWith('<svg') &&
           !trimmed.startsWith('<?xml') &&
           !trimmed.startsWith('<!DOCTYPE svg')) {
-        commonPrint.warn('Invalid SVG: not starting with svg tag');
+        commonPrint.warn('Invalid SVG, bad header');
         return false;
       }
 
@@ -247,21 +247,21 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
           trimmed.contains('<html>') ||
           trimmed.contains('<head>') ||
           trimmed.contains('<body>')) {
-        commonPrint.warn('Invalid SVG: HTML content detected');
+        commonPrint.warn('Invalid SVG, HTML content');
         return false;
       }
 
       if (!trimmed.contains('<svg') &&
           !trimmed.contains('<svg ') &&
           !trimmed.contains('<svg\n')) {
-        commonPrint.warn('Invalid SVG: svg tag missing');
+        commonPrint.warn('Invalid SVG, svg tag missing');
         return false;
       }
 
       if (!trimmed.endsWith('</svg>') &&
           !trimmed.endsWith('/>') &&
           !trimmed.contains('</svg>')) {
-        commonPrint.warn('Invalid SVG: closing tag missing');
+        commonPrint.warn('Invalid SVG, closing tag missing');
         return false;
       }
 
@@ -274,7 +274,7 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
       }
       return true;
     } catch (e) {
-      commonPrint.warn('SVG validation failed: $e');
+      commonPrint.warn('Validate SVG failed: $e');
       return false;
     }
   }
@@ -407,15 +407,16 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
       );
     }
     final base64 = widget.src.getBase64;
-    final iconSize = widget.size.toInt();
+    final cacheSize = (widget.size * MediaQuery.devicePixelRatioOf(context))
+        .ceil()
+        .clamp(1, 1024);
 
     if (base64 != null) {
       return Image(
         image: ResizeImage(
           MemoryImage(base64),
-          width: iconSize,
-          height: iconSize,
-          useLogicalSize: true,
+          width: cacheSize,
+          height: cacheSize,
           policy: ResizeImagePolicy.fit,
         ),
         gaplessPlayback: true,
@@ -436,7 +437,7 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
           theme: _svgTheme(),
           placeholderBuilder: (_) => _defaultIcon(),
           errorBuilder: (_, error, _) {
-            commonPrint.warn('Failed to load SVG: $error');
+            commonPrint.warn('Load SVG failed: $error');
             _IconFileManager.removeFile(widget.src);
             _moduleFileCache.remove(key);
             _moduleSvgCache.remove(widget.src);
@@ -449,9 +450,8 @@ class _CommonTargetIconState extends State<CommonTargetIcon> {
         _file!,
         gaplessPlayback: true,
         fit: BoxFit.contain,
-        cacheWidth: iconSize,
-        cacheHeight: iconSize,
-        useLogicalCacheSize: true,
+        cacheWidth: cacheSize,
+        cacheHeight: cacheSize,
         errorBuilder: (_, _, _) {
           _moduleFileCache.remove(key);
           _moduleFailureCache[key] = DateTime.now();

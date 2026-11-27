@@ -60,6 +60,8 @@ _Profile _$ProfileFromJson(Map<String, dynamic> json) => _Profile(
   managed: json['managed'] as bool? ?? false,
   managedStyleApplied: json['managedStyleApplied'] as bool? ?? false,
   ageSecretKey: json['ageSecretKey'] as String?,
+  skipCertVerify: json['skipCertVerify'] as bool? ?? false,
+  userAgent: json['userAgent'] as String?,
   groupSwitches:
       (json['group-switches'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, e as bool),
@@ -90,6 +92,8 @@ Map<String, dynamic> _$ProfileToJson(_Profile instance) => <String, dynamic>{
   'managed': instance.managed,
   'managedStyleApplied': instance.managedStyleApplied,
   'ageSecretKey': instance.ageSecretKey,
+  'skipCertVerify': instance.skipCertVerify,
+  'userAgent': instance.userAgent,
   'group-switches': instance.groupSwitches,
   'usageStyle': _$ProfileUsageStyleEnumMap[instance.usageStyle]!,
   'bundle': instance.bundle,
@@ -137,6 +141,7 @@ _ProfileBundle _$ProfileBundleFromJson(Map<String, dynamic> json) =>
           ) ??
           const {},
       collapsed: json['collapsed'] as bool? ?? false,
+      scriptKey: json['scriptKey'] as String?,
     );
 
 Map<String, dynamic> _$ProfileBundleToJson(_ProfileBundle instance) =>
@@ -145,6 +150,7 @@ Map<String, dynamic> _$ProfileBundleToJson(_ProfileBundle instance) =>
       'report': instance.report,
       'failures': instance.failures,
       'collapsed': instance.collapsed,
+      'scriptKey': instance.scriptKey,
     };
 
 _OverrideData _$OverrideDataFromJson(Map<String, dynamic> json) =>

@@ -113,7 +113,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             isBinding.set(false)
             bettBoxService = null
             if (GlobalState.currentRunState == RunState.START) {
-                android.util.Log.w("VpnPlugin", "Service unexpectedly disconnected while running, syncing state")
+                ServicePlugin.appWarn("VpnPlugin", "Service disconnected while running")
                 GlobalState.updateRunState(RunState.STOP)
                 ServicePlugin.notifyVpnStartFailed()
                 ServicePlugin.notifyRunStateChanged(RunState.STOP)
@@ -128,6 +128,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         if (job.isCancelled) {
             job = SupervisorJob()
             scope = CoroutineScope(Dispatchers.Default + job as kotlin.coroutines.CoroutineContext)
+            ensureSpeedTicker()
         }
 
         val channel = MethodChannel(flutterPluginBinding.binaryMessenger, "vpn")
@@ -395,7 +396,10 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         Core.screenStateChanged(isOn)
         invokeDart("screenStateChanged", isOn)
         ServicePlugin.notifyScreenStateChanged(isOn)
-        if (isOn) {
+    }
+
+    fun updateSpeedTicker(isScreenOn: Boolean) {
+        if (isScreenOn) {
             ensureSpeedTicker()
         } else {
             stopSpeedTicker()
@@ -578,16 +582,16 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private fun ensureSpeedTicker() {
         synchronized(speedTickerLock) {
             if (!GlobalState.isSpeedNotificationEnabled) return
+            if (GlobalState.currentRunState != RunState.START) return
             if (speedTickerJob?.isActive == true) return
+            if (!isInteractive()) return
             speedTickerJob = scope.launch {
                 while (isActive) {
                     delay(1000)
-                    if (!GlobalState.isSpeedNotificationEnabled ||
-                        GlobalState.currentRunState != RunState.START ||
-                        bettBoxService == null ||
-                        !isInteractive()
-                    ) {
-                        break
+                    if (!GlobalState.isSpeedNotificationEnabled || !isInteractive()) break
+                    if (GlobalState.currentRunState == RunState.STOP) break
+                    if (GlobalState.currentRunState != RunState.START || bettBoxService == null) {
+                        continue
                     }
                     val speedInfo = Core.trafficJson()?.let(::trafficSpeedInfo) ?: continue
                     updateNotificationSpeed(GlobalState.currentProfileName, speedInfo)
@@ -680,7 +684,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     }
 
                     if (prepareIntent != null) {
-                        android.util.Log.w("VpnPlugin", "VPN permission required before start")
+                        ServicePlugin.appWarn("VpnPlugin", "VPN permission required")
                         GlobalState.updateRunState(RunState.STOP)
                         ServicePlugin.notifyVpnStartFailed()
                         return@launch
@@ -696,7 +700,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                         return@withLock false
                     }
                     if (currentOptions == null) {
-                        android.util.Log.e("VpnPlugin", "Start failed: options is null")
+                        ServicePlugin.appError("VpnPlugin", "Start failed, no options")
                         GlobalState.updateRunState(RunState.STOP)
                         return@withLock false
                     }
@@ -716,7 +720,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     ServicePlugin.notifyNetworkChanged()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("VpnPlugin", "Fatal error in start flow: ${e.message}")
+                ServicePlugin.appError("VpnPlugin", "Start failed: ${e.message}")
                 GlobalState.updateRunState(RunState.STOP)
             }
         }
@@ -748,7 +752,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         }
 
         if (fd == null || (currentOptions.enable && fd <= 0)) {
-            android.util.Log.e("VpnPlugin", "VPN start failed after all attempts")
+            ServicePlugin.appError("VpnPlugin", "Establish VPN failed after retry")
             GlobalState.runLock.withLock { GlobalState.updateRunState(RunState.STOP) }
             if (notifyOnFailure) {
                 ServicePlugin.notifyVpnStartFailed()
@@ -771,7 +775,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             resolverProcess = this@VpnPlugin::resolverProcess,
         )
         if (!tunStarted) {
-            android.util.Log.e("VpnPlugin", "Core startTun failed")
+            ServicePlugin.appError("VpnPlugin", "Start TUN failed")
             GlobalState.runLock.withLock { GlobalState.updateRunState(RunState.STOP) }
             if (notifyOnFailure) {
                 ServicePlugin.notifyVpnStartFailed()
@@ -870,6 +874,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             shouldForceStop = force || bettBoxService == null
         }
 
+        stopSpeedTicker()
         suspendModule?.uninstall()
         suspendModule = null
         Core.stopTun()
@@ -914,6 +919,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             GlobalState.updateRunState(RunState.STOP)
             GlobalState.isSmartStopped = true
         }
+        stopSpeedTicker()
         suspendModule?.uninstall()
         suspendModule = null
         Core.stopTun()
@@ -969,7 +975,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         bindTimeoutJob = scope.launch {
             delay(10_000L)
             if (isBinding.compareAndSet(true, false)) {
-                android.util.Log.w("VpnPlugin", "bindService timeout (10s), resetting bind state")
+                ServicePlugin.appWarn("VpnPlugin", "Bind service timeout")
                 GlobalState.runLock.withLock {
                     if (GlobalState.currentRunState == RunState.PENDING) {
                         GlobalState.updateRunState(RunState.STOP)
@@ -992,13 +998,13 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 isBinding.set(false)
                 bindTimeoutJob?.cancel()
                 bindTimeoutJob = null
-                android.util.Log.e("VpnPlugin", "bindService returned false (rejected by system)")
+                ServicePlugin.appError("VpnPlugin", "Bind service rejected")
             }
         } catch (e: Exception) {
             isBinding.set(false)
             bindTimeoutJob?.cancel()
             bindTimeoutJob = null
-            android.util.Log.e("VpnPlugin", "bindService error: ${e.message}")
+            ServicePlugin.appError("VpnPlugin", "Bind service failed: ${e.message}")
         }
     }
 }

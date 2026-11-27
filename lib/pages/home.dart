@@ -496,7 +496,7 @@ class _HomePageViewState extends ConsumerState<_HomePageView> {
     if (!animate ||
         !ref.read(isMobileViewProvider) ||
         !ref.read(appSettingProvider).enableNavBarHapticFeedback ||
-        MediaQuery.reduceMotionOf(context)) {
+        context.reduceMotion) {
       _pageController.jumpToPage(index);
       return;
     }
@@ -588,7 +588,7 @@ class HomeBackScope extends ConsumerWidget {
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop || backBlock) return;
           if (!routeIdleObserver.isSettled) {
-            commonPrint.log('Back ignored: route transition not settled');
+            commonPrint.debug('Back ignored during transition');
             return;
           }
           final navigatorState = globalState.navigatorKey.currentState;
